@@ -19,13 +19,16 @@ functions.http('journeyEmail', (req, res) => {
       res.set('Access-Control-Max-Age', '3600');
       res.status(204).send('');
     } else {
-        let phoneToAuthenticate = req.body.sessionInfo.parameters["cust_phone"];
+        var phoneToAuthenticate = req.body.sessionInfo.parameters["cust_phone"];
+		if (!phoneToAuthenticate.includes("+")) {
+			phoneToAuthenticate = `+${phoneToAuthenticate}`
+		}
         let iframeId = req.body.sessionInfo.parameters["dashboardId"];
         let pipelineKey = req.body.sessionInfo.parameters["authenticationPipelineKey"];
         let callbackUrls = req.body.sessionInfo.parameters["callbackURLs"];
         let journeyToken = req.body.sessionInfo.parameters["journeyToken"];
 		let email = req.body.sessionInfo.parameters["email"];
-        let callingParty = phoneToAuthenticate.substr(1); // Remove "+"
+        callingParty = phoneToAuthenticate.substr(1); // Remove "+"
         JourneySendEmail(res, email, iframeId, pipelineKey, callbackUrls, journeyToken, callingParty);
     }
 
@@ -45,8 +48,7 @@ async function JourneySendEmail(res, email, iframeId, pipelineKey, callbackUrls,
 		},
 		"session_info": {
 			"parameters": {
-				"JourneyReferenceId": null,
-				"PhoneNoPlus": null
+				"journeyReferenceId": null
 			}
 		}
 	};
@@ -88,8 +90,7 @@ async function JourneySendEmail(res, email, iframeId, pipelineKey, callbackUrls,
 	try {
 		const JourneySendResponse = await axios(config);
 		console.dir(JourneySendResponse.data);
-		jsonResponse.session_info.parameters.JourneyReferenceId = JourneySendResponse.data.session.externalRef;
-		jsonResponse.session_info.parameters.PhoneNoPlus = callingParty;
+		jsonResponse.session_info.parameters.journeyReferenceId = JourneySendResponse.data.session.externalRef;
         // Send results back to Dialogflow
         res.status(200).send(JSON.stringify(jsonResponse));
 	} catch (e) {
